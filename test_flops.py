@@ -8,13 +8,14 @@ from tabulate import tabulate
 import matplotlib.pyplot as plt
 
 Device = Literal['gpu', 'cpu']
+VERBOSE = False
 
 getcontext().prec = 100  # Set Decimal precision to 100 decimal places
 
 class FLOPS:
     @staticmethod
     def reference_inputs(size: int) -> List[Decimal]:
-        print(f'-> Generating reference inputs of size {size}...')
+        log(f'-> Generating reference inputs of size {size}...')
         max_unique_values = 1000
         unique_size = min(size, max_unique_values)  # Determine number of unique values to generate
         inputs = []
@@ -30,7 +31,7 @@ class FLOPS:
 
 
         assert(len(inputs) == size)
-        print(f'-> Finished generating')
+        log(f'-> Finished generating')
 
         return inputs
 
@@ -40,22 +41,21 @@ class FLOPS:
         return results
 
     @classmethod
-    def measure_flops(cls, dtype, device: Device, input_size: int):
+    def measure_flops(cls, dtype, lib, input_size: int):
         inputs = cls.reference_inputs(input_size)
-        num_flop, time_taken_ns = cls.compute_routines(inputs, dtype, device)
+        num_flop, time_taken_ns = cls.compute_routines(inputs, dtype, lib)
         flops_rate = num_flop / (time_taken_ns * 10**-9)  # Correctly convert ns to seconds
 
-        print(f'Time taken ns = {time_taken_ns} ns')
+        log(f'Time taken ns = {time_taken_ns} ns')
 
         return flops_rate
 
     @staticmethod
-    def compute_routines(inputs: List[Decimal], dtype, device: Device, iterations=1) -> (int, float):
-        lib = cp if device == 'gpu' else np
+    def compute_routines(inputs: List[Decimal], dtype, lib, iterations=1) -> (int, float):
         dtype = getattr(lib, dtype)
-        print(f'-> Converting inputs to np array')
+        log(f'-> Converting inputs to np array')
         array_inputs = lib.array([float(d) for d in inputs], dtype=dtype)
-        print(f'-> Finished conversion')
+        log(f'-> Finished conversion')
 
         start_time = time.time_ns()
         for _ in range(iterations):
@@ -70,16 +70,22 @@ class FLOPS:
 
     @classmethod
     def measure_varying_input(cls, dtype, device: Device):
-        input_sizes = [10**1, 10**2, 10**3, 10**4, 10**5, 10**6,10**7, 10**8]
+        input_sizes = [10**1, 10**2, 10**3, 10**4, 10**5, 10**6]
         results = []
+        lib = cp if device == 'gpu' else np
+        print(f'-> Measuring FLOPS for {dtype} on {device} using library {lib.__name__}')
         for size in input_sizes:
-            print(f'Testing for input size: {size}...')
-            flops_rate = cls.measure_flops(dtype, device, size)
-            results.append([f'n={float(size):.2e}', f'{flops_rate:.2e} FLOPS'])
+            log(f'Testing for input size: {size}...')
+            flops_rate = cls.measure_flops(dtype, lib, size)
+            results.append([f'n={float(size):.2e}', f'{dtype}', f'{lib.__name__}', f'{flops_rate:.2e} FLOPS'])
 
-        headers = ['Input Size', 'FLOPS Rate']
+        headers = ['Input Size', 'dtype', 'Library', 'FLOPS Rate']
         print(tabulate(results, headers=headers, tablefmt='psql'))
 
+
+def log(msg : str):
+    if VERBOSE:
+        print(msg)
 
 def plot_flops(input_sizes, flops_rates):
     plt.figure(figsize=(10, 5))  # Set the figure size (optional)
@@ -105,7 +111,9 @@ def plot_flops(input_sizes, flops_rates):
 
 
 if __name__ == "__main__":
-    dtype = 'float64'
-    device: Device = 'gpu'
-    FLOPS.measure_varying_input(dtype, device)
+    dtype = 'float32'
+    for dtype in ['float16','float32', 'float64']:
+        for device in ['cpu', 'gpu']:
+            device : Device
+            FLOPS.measure_varying_input(dtype, device=device)
 
