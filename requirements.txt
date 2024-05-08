@@ -1,2 +1,3 @@
 numpy
 cupy-cuda11x
+matplotlib
