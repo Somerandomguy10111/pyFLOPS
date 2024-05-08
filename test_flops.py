@@ -73,7 +73,7 @@ class FLOPS:
         input_sizes = [10**1, 10**2, 10**3, 10**4, 10**5, 10**6]
         results = []
         lib = cp if device == 'gpu' else np
-        print(f'-> Measuring FLOPS for {dtype} on {device} using library {lib.__name__}')
+        print(f'\n-> Measuring FLOPS for {dtype} on {device} using library {lib.__name__}')
         for size in input_sizes:
             log(f'Testing for input size: {size}...')
             flops_rate = cls.measure_flops(dtype, lib, size)
