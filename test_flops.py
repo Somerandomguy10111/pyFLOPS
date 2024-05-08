@@ -57,7 +57,7 @@ class FLOPS:
         for size in input_sizes:
             print(f'Testing for input size: {size}...')
             flops_rate = cls.measure_flops(dtype, device, size)
-            results.append([f'{size:.2e}', f'{flops_rate:.2e} FLOPS'])
+            results.append([f'{float(size):.2e}\u2800', f'{flops_rate:.2e} FLOPS'])
 
         headers = ['Input Size', 'FLOPS Rate']
         print(tabulate(results, headers=headers, tablefmt='psql'))
