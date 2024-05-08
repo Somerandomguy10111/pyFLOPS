@@ -92,6 +92,16 @@ def plot_flops(input_sizes, flops_rates):
     plt.grid(True)  # Enable grid
     plt.show()  # Display the plot
 
+#GeForce GTX 1060 GFlops
+# https://en.wikipedia.org/wiki/List_of_Nvidia_graphics_processing_units
+#"This list contains general information about graphics processing units (GPUs) and video cards from Nvidia,
+# based on official specifications.
+# In addition some Nvidia motherboards come with integrated onboard GPUs.
+# Limited/Special/Collectors' Editions or AIB versions are not included."
+
+# fp16: 54.2 (? slower than double?)
+# fp32: 3855
+# fp64: 120
 
 
 if __name__ == "__main__":
