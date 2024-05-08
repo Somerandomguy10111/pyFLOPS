@@ -14,11 +14,24 @@ getcontext().prec = 100  # Set Decimal precision to 100 decimal places
 class FLOPS:
     @staticmethod
     def reference_inputs(size: int) -> List[Decimal]:
-        """ Generates reference inputs with randomly generated high-precision Decimal values. """
+        print(f'-> Generating reference inputs of size {size}...')
+        max_unique_values = 1000
+        unique_size = min(size, max_unique_values)  # Determine number of unique values to generate
         inputs = []
-        for _ in range(size):
+        for _ in range(unique_size):
             number_str = '0.' + ''.join(str(randint(0, 9)) for _ in range(getcontext().prec - 1))
             inputs.append(Decimal(number_str))
+
+        # If the desired size is greater than the number of unique values, repeat the array
+        if size > unique_size:
+            repeat_count = size // unique_size
+            remainder = size % unique_size
+            inputs = inputs * repeat_count + inputs[:remainder]
+
+
+        assert(len(inputs) == size)
+        print(f'-> Finished generating')
+
         return inputs
 
     @staticmethod
@@ -40,7 +53,9 @@ class FLOPS:
     def compute_routines(inputs: List[Decimal], dtype, device: Device, iterations=1) -> (int, float):
         lib = cp if device == 'gpu' else np
         dtype = getattr(lib, dtype)
+        print(f'-> Converting inputs to np array')
         array_inputs = lib.array([float(d) for d in inputs], dtype=dtype)
+        print(f'-> Finished conversion')
 
         start_time = time.time_ns()
         for _ in range(iterations):
@@ -55,7 +70,7 @@ class FLOPS:
 
     @classmethod
     def measure_varying_input(cls, dtype, device: Device):
-        input_sizes = [10**1, 10**2, 10**3, 10**4, 10**5, 10**6,10**7]
+        input_sizes = [10**1, 10**2, 10**3, 10**4, 10**5, 10**6,10**7, 10**8]
         results = []
         for size in input_sizes:
             print(f'Testing for input size: {size}...')
@@ -65,26 +80,22 @@ class FLOPS:
         headers = ['Input Size', 'FLOPS Rate']
         print(tabulate(results, headers=headers, tablefmt='psql'))
 
-    def plot_flops(input_sizes, flops_rates):
-        plt.figure(figsize=(10, 5))  # Set the figure size (optional)
-        plt.plot(input_sizes, flops_rates, marker='o', linestyle='-', color='b')  # Plot the data
-        plt.xlabel('Input Size')  # Label for the x-axis
-        plt.ylabel('FLOP/s')  # Label for the y-axis
-        plt.title('FLOP/s vs Input Size')  # Title of the plot
-        plt.xscale('log')  # Set the x-axis to a logarithmic scale
-        plt.yscale('log')  # Set the y-axis to a logarithmic scale
-        plt.grid(True)  # Enable grid
-        plt.show()  # Display the plot
+
+def plot_flops(input_sizes, flops_rates):
+    plt.figure(figsize=(10, 5))  # Set the figure size (optional)
+    plt.plot(input_sizes, flops_rates, marker='o', linestyle='-', color='b')  # Plot the data
+    plt.xlabel('Input Size')  # Label for the x-axis
+    plt.ylabel('FLOP/s')  # Label for the y-axis
+    plt.title('FLOP/s vs Input Size')  # Title of the plot
+    plt.xscale('log')  # Set the x-axis to a logarithmic scale
+    plt.yscale('log')  # Set the y-axis to a logarithmic scale
+    plt.grid(True)  # Enable grid
+    plt.show()  # Display the plot
+
+
 
 if __name__ == "__main__":
-    # dtype = 'float64'
-    # device: Device = 'gpu'
-    # FLOPS.measure_varying_input(dtype, device)
+    dtype = 'float64'
+    device: Device = 'gpu'
+    FLOPS.measure_varying_input(dtype, device)
 
-    # Sample data: Replace these lists with your actual data
-    input_sizes = [10 ** 2, 10 ** 3, 10 ** 4, 10 ** 5]  # Input sizes
-    flops_rates = [2.13e+05, 9.29e+06, 9.06e+07, 8.76e+09]  # Corresponding FLOP/s rates
-
-
-
-    plot_flops(input_sizes, flops_rates)
